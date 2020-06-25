@@ -1,0 +1,49 @@
+{
+  "name": "node-eightsleep",
+  "version": "0.0.0",
+  "description": "eightsleep api client",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
+    "test": "jest --coverage"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tjmehta/node-eightsleep.git"
+  },
+  "keywords": [
+    "eightsleep",
+    "api",
+    "client"
+  ],
+  "author": "Tejesh Mehta",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tjmehta/node-eightsleep/issues"
+  },
+  "homepage": "https://github.com/tjmehta/node-eightsleep#readme",
+  "devDependencies": {
+    "@babel/preset-env": "^7.10.2",
+    "@babel/preset-typescript": "^7.10.1",
+    "@types/bent": "^7.0.2",
+    "@types/concat-stream": "^1.6.0",
+    "@types/jest": "^25.2.3",
+    "@types/node": "^14.0.13",
+    "abstract-startable": "^1.0.1",
+    "babel-core": "^6.26.3",
+    "babel-jest": "^26.0.1",
+    "concat-stream": "^2.0.0",
+    "env-var": "^6.2.0",
+    "esm": "^3.2.25",
+    "jest": "^26.0.1",
+    "prettier": "^2.0.5",
+    "typescript": "^3.9.3"
+  },
+  "dependencies": {
+    "baseerr": "^1.0.0",
+    "cross-fetch": "^3.0.5",
+    "simple-api-client": "^1.1.1"
+  }
+}
