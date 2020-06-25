@@ -14,7 +14,7 @@ npm i --save eightsleep
 
 ```js
 // esm
-import Eightsleep from 'eightsleep`
+import Eightsleep from 'eightsleep'
 // commonjs
 const Eightsleep = require('eightsleep')
 ```
