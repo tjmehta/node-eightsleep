@@ -56,16 +56,22 @@ export default class MockEightAPIServer extends AbstractStartable {
       /^\/users\/(me|1234567890abcdef123456789011111)/.test(url)
     ) {
       res.statusCode = 200
+      const result = filterByQuery(ownerUserResponse, url)
+      if (result) return res.end(JSON.stringify({ result }))
       res.end(JSON.stringify({ user: ownerUserResponse }))
     } else if (
       method === 'GET' &&
       /^\/users\/(1234567890abcdef123456789022222)/.test(url)
     ) {
       res.statusCode = 200
+      const result = filterByQuery(partnerUserResponse, url)
+      if (result) return res.end(JSON.stringify({ result }))
       res.end(JSON.stringify({ user: partnerUserResponse }))
     } else if (method === 'GET' && /^\/devices\/.*/.test(url)) {
       res.statusCode = 200
-      res.end(JSON.stringify({ device: deviceResponse }))
+      const result = filterByQuery(deviceResponse, url)
+      if (result) return res.end(JSON.stringify({ result }))
+      res.end(JSON.stringify({ result: deviceResponse }))
     } else {
       res.statusCode = 404
       res.end()
@@ -89,4 +95,18 @@ export default class MockEightAPIServer extends AbstractStartable {
       delete this.server
     })
   }
+}
+
+function filterByQuery(obj: {}, url: string): {} | null {
+  let match = url.match(/filter=([^&]*)/)
+  if (!match || !match[1]) return null
+  const keys = match[1].split(',')
+  return pick(obj, keys)
+}
+
+function pick(obj: {}, keys: Array<string>): {} {
+  return keys.reduce((out, key) => {
+    out[key] = obj[key]
+    return out
+  }, {})
 }

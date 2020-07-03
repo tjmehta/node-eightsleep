@@ -118,6 +118,8 @@ export default class EightSleepApiClient extends ApiClient {
       throw new InvalidResponseError('invalid response', { json })
     }
 
+    // @ts-ignore
+    if (query?.filter) return json.result
     return validateUser(json.user)
   }
 
@@ -138,6 +140,8 @@ export default class EightSleepApiClient extends ApiClient {
       throw new InvalidResponseError('invalid response', { json })
     }
 
-    return validateDevice(json.device)
+    // @ts-ignore
+    if (query?.filter) return json.result
+    return validateDevice(json.result)
   }
 }

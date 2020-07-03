@@ -116,10 +116,7 @@ export default function validateDevice(device: any): DeviceType {
   if (typeof device != 'object') {
     throw new InvalidDeviceError('invalid device', { device })
   }
-  if (typeof device.result != 'object') {
-    throw new InvalidDeviceError('invalid result', { device })
-  }
-  let { lastHeard, lastLowWater, lastPrime, sensorInfo } = device.result
+  let { lastHeard, lastLowWater, lastPrime, sensorInfo } = device
   lastHeard = new Date(lastHeard)
   if (lastHeard != null && isNaN(lastHeard.valueOf())) {
     throw new InvalidDeviceError('invalid lastHeard', { device })
