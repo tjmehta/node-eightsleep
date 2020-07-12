@@ -3,16 +3,19 @@ import { IncomingMessage, Server, ServerResponse, createServer } from 'http'
 import AbstractStartable from 'abstract-startable'
 import concat from 'concat-stream'
 import deviceResponse from './deviceResponse'
+import oauthResponse from './oauthResponse'
 import ownerUserResponse from './ownerUserResponse'
 import partnerUserResponse from './partnerUserResponse'
 
 export const PORT = process.env.PORT || 3131
 
-export default class MockEightAPIServer extends AbstractStartable {
+export default class MockEightClientAPIServer extends AbstractStartable {
   server: Server | undefined
 
   private _handleRequest(req: IncomingMessage, res: ServerResponse) {
     const { method, url } = req
+
+    // login route
     if (method === 'POST' && /^\/login/.test(url)) {
       req.pipe(
         concat((body) => {
@@ -43,6 +46,8 @@ export default class MockEightAPIServer extends AbstractStartable {
       )
       return
     }
+
+    // authorized routes
     if (
       req.headers['session-token'] !==
       '1234567890abcdef1234567890abcdef-1234567890abcdef1234567890abcdef'
@@ -51,9 +56,24 @@ export default class MockEightAPIServer extends AbstractStartable {
       res.end(JSON.stringify({ status: 401, code: 'Unauthorized' }))
       return
     }
-    if (
+
+    // authorization is valid
+    if (method === 'PUT' && /^\/users\/me$/.test(url)) {
+      res.pipe(
+        concat((body) => {
+          res.statusCode = 200
+          const user = {
+            ownerUserResponse,
+            ...JSON.parse(body.toString()),
+          }
+          const result = filterByQuery(user, url)
+          if (result) return res.end(JSON.stringify({ result }))
+          res.end(JSON.stringify({ user }))
+        }),
+      )
+    } else if (
       method === 'GET' &&
-      /^\/users\/(me|1234567890abcdef123456789011111)/.test(url)
+      /^\/users\/(me|1234567890abcdef123456789011111)$/.test(url)
     ) {
       res.statusCode = 200
       const result = filterByQuery(ownerUserResponse, url)
@@ -61,17 +81,23 @@ export default class MockEightAPIServer extends AbstractStartable {
       res.end(JSON.stringify({ user: ownerUserResponse }))
     } else if (
       method === 'GET' &&
-      /^\/users\/(1234567890abcdef123456789022222)/.test(url)
+      /^\/users\/(1234567890abcdef123456789022222)$/.test(url)
     ) {
       res.statusCode = 200
       const result = filterByQuery(partnerUserResponse, url)
       if (result) return res.end(JSON.stringify({ result }))
       res.end(JSON.stringify({ user: partnerUserResponse }))
-    } else if (method === 'GET' && /^\/devices\/.*/.test(url)) {
+    } else if (
+      method === 'GET' &&
+      /^\/devices\/123456789012345678901234/.test(url)
+    ) {
       res.statusCode = 200
       const result = filterByQuery(deviceResponse, url)
       if (result) return res.end(JSON.stringify({ result }))
       res.end(JSON.stringify({ result: deviceResponse }))
+    } else if (method === 'POST' && /^\/users\/oauth-token$/) {
+      res.statusCode = 200
+      res.end(JSON.stringify(oauthResponse))
     } else {
       res.statusCode = 404
       res.end()

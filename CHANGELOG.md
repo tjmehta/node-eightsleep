@@ -1,3 +1,8 @@
+# 1.2.0
+
+- minor - add support for toggling on/off sides, temperature control, updating user
+- patch - misc fixes
+
 # 1.1.0
 
 - minor - add support for filter query param

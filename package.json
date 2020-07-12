@@ -7,7 +7,7 @@
   "scripts": {
     "prepublish": "npm run build",
     "build": "tsc -p tsconfig.json && tsc -p tsconfig-cjs.json",
-    "test": "jest --coverage"
+    "test": "node -r dotenv/config node_modules/.bin/jest --coverage"
   },
   "repository": {
     "type": "git",
@@ -35,6 +35,7 @@
     "babel-core": "^6.26.3",
     "babel-jest": "^26.0.1",
     "concat-stream": "^2.0.0",
+    "dotenv": "^8.2.0",
     "env-var": "^6.2.0",
     "esm": "^3.2.25",
     "jest": "^26.0.1",
@@ -44,6 +45,6 @@
   "dependencies": {
     "baseerr": "^1.0.0",
     "cross-fetch": "^3.0.5",
-    "simple-api-client": "^1.1.1"
+    "simple-api-client": "^2.4.4"
   }
 }

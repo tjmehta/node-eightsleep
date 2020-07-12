@@ -1,31 +1,69 @@
-import MockEightAPIServer, { PORT } from './__fixtures__/MockEightAPIServer'
+import EightSleep, { OptsType } from '..'
+import MockEightAppAPIServer, {
+  PORT as appAPIServerPort,
+} from './__fixtures__/MockEightAppAPIServer'
+import MockEightClientAPIServer, {
+  PORT as clientAPIServerPort,
+} from './__fixtures__/MockEightClientAPIServer'
 
-import Eightsleep from '../index'
+import { Sides } from './../EightSleepAppApi'
 
-const username = 'owner@email.com'
-const password = 'ownerpassword'
+const email = process.env.EMAIL || 'owner@email.com'
+const password = process.env.PASSWORD || 'ownerpassword'
+const oauthClient = {
+  id: process.env.OAUTH_CLIENT_ID || '1234567890abcdef1234567890123456',
+  secret:
+    process.env.OAUTH_CLIENT_SECRET ||
+    '1234567890123456789012345678901234567890234567890123456789012345',
+}
+
+function createEightSleep(customAuth?: {
+  email: OptsType['email']
+  password: OptsType['password']
+}) {
+  const eightSleep = new EightSleep({
+    email: customAuth?.email || email,
+    password: customAuth?.password || password,
+    oauthClient,
+  })
+
+  // hack so request hit mock api servers
+  // @ts-ignore
+  eightSleep.host = `http://localhost:${clientAPIServerPort}`
+  const appApi = eightSleep.getAppApiClient()
+  // @ts-ignore
+  appApi.host = `http://localhost:${appAPIServerPort}`
+
+  return eightSleep
+}
 
 describe('eightsleep', () => {
-  const server = new MockEightAPIServer()
+  const clientServer = new MockEightClientAPIServer()
+  const appServer = new MockEightAppAPIServer()
 
   beforeEach(async () => {
-    await server.start()
+    await clientServer.start()
+    await appServer.start()
   })
 
   afterEach(async () => {
-    await server.stop()
+    await clientServer.stop()
+    await appServer.stop()
   })
 
   it('should not login with invalid credentials', async () => {
-    const e = new Eightsleep(`http://localhost:${PORT}`)
+    const e = createEightSleep({
+      email,
+      password: password + password,
+    })
     await expect(async () => {
-      await e.login(username, password + password)
-    }).rejects.toThrow(/400/)
+      await e.login()
+    }).rejects.toMatchInlineSnapshot(`[StatusCodeError: unexpected status]`)
   })
 
   it('should login', async () => {
-    const e = new Eightsleep(`http://localhost:${PORT}`)
-    const session = await e.login(username, password)
+    const e = createEightSleep()
+    const session = await e.login()
     expect(session).toMatchInlineSnapshot(`
       Object {
         "expirationDate": 3020-06-30T05:40:30.880Z,
@@ -36,8 +74,8 @@ describe('eightsleep', () => {
   })
 
   it('should get me', async () => {
-    const e = new Eightsleep(`http://localhost:${PORT}`)
-    await e.login(username, password)
+    const e = createEightSleep()
+    await e.login()
     const me = await e.getMe()
     expect(me).toMatchInlineSnapshot(`
       Object {
@@ -76,9 +114,9 @@ describe('eightsleep', () => {
   })
 
   it('should get a device', async () => {
-    const e = new Eightsleep(`http://localhost:${PORT}`)
-    await e.login(username, password)
-    const me = await e.getDevice('200036001847373531373933')
+    const e = createEightSleep()
+    await e.login()
+    const me = await e.getDevice('123456789012345678901234')
     expect(me).toMatchInlineSnapshot(`
       Object {
         "deviceId": "123456789012345678901234",
@@ -248,9 +286,9 @@ describe('eightsleep', () => {
   })
 
   it('should get a device', async () => {
-    const e = new Eightsleep(`http://localhost:${PORT}`)
-    await e.login(username, password)
-    const me = await e.getDevice('200036001847373531373933', {
+    const e = createEightSleep()
+    await e.login()
+    const me = await e.getDevice('123456789012345678901234', {
       filter: 'sensorInfo',
     })
     expect(me).toMatchInlineSnapshot(`
@@ -270,8 +308,8 @@ describe('eightsleep', () => {
   })
 
   it('should get owner user by id', async () => {
-    const e = new Eightsleep(`http://localhost:${PORT}`)
-    await e.login(username, password)
+    const e = createEightSleep()
+    await e.login()
     const me = await e.getUser('1234567890abcdef123456789011111')
     expect(me).toMatchInlineSnapshot(`
       Object {
@@ -310,8 +348,8 @@ describe('eightsleep', () => {
   })
 
   it('should get partner user by id', async () => {
-    const e = new Eightsleep(`http://localhost:${PORT}`)
-    await e.login(username, password)
+    const e = createEightSleep()
+    await e.login()
     const me = await e.getUser('1234567890abcdef123456789022222')
     expect(me).toMatchInlineSnapshot(`
       Object {
@@ -347,5 +385,165 @@ describe('eightsleep', () => {
         "zip": 11111,
       }
     `)
+  })
+
+  it('should get oauth tokens', async () => {
+    const e = createEightSleep()
+    await e.login()
+    const oauth = await e.oauth()
+    expect(oauth).toMatchInlineSnapshot(`
+      Object {
+        "accessToken": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZiIsImlzcyI6ImVpZ2h0OnYxIiwiYXVkIjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJzdWIiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImV4cCI6MTU5NDU4ODE2OSwic2NvIjpbInJlYWRfc2xlZXAiLCJ3cml0ZV9zbGVlcCIsInJlYWRfZGV2aWNlIiwid3JpdGVfZGV2aWNlIl0sInR5cCI6ImF1dGgiLCJpYXQiOjE1OTQ1MDE3Njl9.2odxApSPTrELwtTlIRtJeek8ke96sWcbxvDGJLcgEehXeNRGIrUPnqwHLjI6gsyregEJ6wetF8qtHB7MCu_b-A",
+        "expiresIn": 2020-07-11T21:10:38.035Z,
+        "refreshToken": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZiIsImlzcyI6ImVpZ2h0OnYxIiwiYXVkIjoiYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEiLCJzdWIiOiJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYiIsImV4cCI6MTU5NDU4ODE2OSwic2NvIjpbInJlYWRfc2xlZXAiLCJ3cml0ZV9zbGVlcCIsInJlYWRfZGV2aWNlIiwid3JpdGVfZGV2aWNlIl0sInR5cCI6ImF1dGgiLCJpYXQiOjE1OTQ1MDE3Njl9.l3XCxV4Sy_Bbg8398p8I5a4sAgiVt8pU2gxTLRpIrlfMrf0IGeRsvIVWC4UzcWUlwfn-RwANnAJ6Y-38K7yoAA",
+        "tokenType": "bearer",
+      }
+    `)
+  })
+
+  describe('appApi', () => {
+    it('should get device status', async () => {
+      const e = createEightSleep()
+      await e.login()
+      const appApi = e.getAppApiClient()
+      const status = await appApi.getDeviceStatus('123456789012345678901234')
+      expect(status).toMatchInlineSnapshot(`
+        Object {
+          "left": Object {
+            "currentActivity": "off",
+            "currentLevel": -29,
+            "currentTargetLevel": 0,
+            "version": 2,
+          },
+          "right": Object {
+            "currentActivity": "off",
+            "currentLevel": -33,
+            "currentTargetLevel": 0,
+            "version": 2,
+          },
+        }
+      `)
+    })
+    it('should turn device side off', async () => {
+      const e = createEightSleep()
+      await e.login()
+      const appApi = e.getAppApiClient()
+      const status = await appApi.setDeviceSideOff(
+        '123456789012345678901234',
+        Sides.LEFT,
+      )
+      expect(status).toMatchInlineSnapshot(`
+        Object {
+          "left": Object {
+            "currentActivity": "off",
+            "currentLevel": -33,
+            "currentTargetLevel": 0,
+            "version": 2,
+          },
+          "right": Object {
+            "currentActivity": "off",
+            "currentLevel": -33,
+            "currentTargetLevel": 0,
+            "version": 2,
+          },
+        }
+      `)
+    })
+
+    it('should turn device side on', async () => {
+      const e = createEightSleep()
+      await e.login()
+      const appApi = e.getAppApiClient()
+      const status = await appApi.setDeviceSideOn(
+        '123456789012345678901234',
+        Sides.LEFT,
+      )
+      expect(status).toMatchInlineSnapshot(`
+        Object {
+          "left": Object {
+            "currentActivity": "schedule",
+            "currentLevel": -31,
+            "currentTargetLevel": 10,
+            "smartTemperature": Object {
+              "bedLocalTime": "00:00:00",
+              "bedTimeLevel": 10,
+              "currentPhase": "bedtime",
+              "finalSleepLevel": -10,
+              "initialSleepLevel": -10,
+            },
+            "version": 2,
+          },
+          "right": Object {
+            "currentActivity": "off",
+            "currentLevel": -33,
+            "currentTargetLevel": 0,
+            "version": 2,
+          },
+        }
+      `)
+    })
+
+    it('should set device side temperature (while off)', async () => {
+      const e = createEightSleep()
+      await e.login()
+      const appApi = e.getAppApiClient()
+      await appApi.setDeviceSideOff('123456789012345678901234', Sides.LEFT)
+      const status = await appApi.setDeviceSideLevel(
+        '123456789012345678901234',
+        Sides.LEFT,
+        10,
+      )
+      expect(status).toMatchInlineSnapshot(`
+        Object {
+          "left": Object {
+            "currentActivity": "off",
+            "currentLevel": -33,
+            "currentTargetLevel": 0,
+            "version": 2,
+          },
+          "right": Object {
+            "currentActivity": "off",
+            "currentLevel": -33,
+            "currentTargetLevel": 0,
+            "version": 2,
+          },
+        }
+      `)
+    })
+
+    it('should set device side temperature (while on)', async () => {
+      const e = createEightSleep()
+      await e.login()
+      const appApi = e.getAppApiClient()
+      await appApi.setDeviceSideOn('123456789012345678901234', Sides.LEFT)
+      const status = await appApi.setDeviceSideLevel(
+        '123456789012345678901234',
+        Sides.LEFT,
+        10,
+      )
+      expect(status).toMatchInlineSnapshot(`
+        Object {
+          "left": Object {
+            "currentActivity": "schedule",
+            "currentLevel": -31,
+            "currentTargetLevel": 10,
+            "smartTemperature": Object {
+              "bedLocalTime": "00:00:00",
+              "bedTimeLevel": 10,
+              "currentPhase": "bedtime",
+              "finalSleepLevel": -10,
+              "initialSleepLevel": -10,
+            },
+            "version": 2,
+          },
+          "right": Object {
+            "currentActivity": "off",
+            "currentLevel": -33,
+            "currentTargetLevel": 0,
+            "version": 2,
+          },
+        }
+      `)
+    })
   })
 })

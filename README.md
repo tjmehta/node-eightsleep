@@ -116,6 +116,51 @@ const user = await eightsleep.getUser('1234567890abcdef123456789022222')
 */
 ```
 
+#### Update Me Example
+
+```js
+import Eightsleep from 'eightsleep'
+
+const eightsleep = new Eightsleep()
+await eightsleep.login()
+
+const me = await eightsleep.updateMe({ zip: 94401 })
+/*
+{
+  "currentDevice": {
+    "id": "123456789012345678901234",
+    "side": "left",
+  },
+  "devices": [
+    "123456789012345678901234",
+  ],
+  "dob": 1900-04-01T08:34:30.000Z,
+  "email": "owner@email.com",
+  "emailVerified": true,
+  "features": [
+    "warming",
+    "cooling",
+  ],
+  "firstName": "Owner",
+  "gender": "male",
+  "lastName": "Person",
+  "notifications": {
+    "sessionProcessed": true,
+    "weeklyReportEmail": true,
+  },
+  "sharingMetricsFrom": [
+    "1234567890abcdef123456789022222",
+  ],
+  "sharingMetricsTo": [
+    "1234567890abcdef123456789022222",
+  ],
+  "timezone": "America/Los_Angeles",
+  "userId": "1234567890abcdef123456789011111",
+  "zip": 94401,
+}
+*/
+```
+
 #### Get Device Example
 
 ```js
@@ -292,6 +337,121 @@ const device = await eightsleep.getDevice(deviceId)
     "skuName": "queen",
   },
   "timezone": "America/Los_Angeles",
+}
+*/
+```
+
+#### Turn Device Side On/Off
+
+```js
+import Eightsleep, { Sides } from 'eightsleep'
+
+const eightsleep = new Eightsleep()
+const appApiClient = eightsleep.getAppApiClient()
+
+const me = await eightsleep.getMe()
+const deviceId = me.currentDevice.id
+
+let status
+status = await appApiClient.setDeviceSideOn(deviceId, Sides.LEFT)
+/*
+{
+  "left": {
+    "currentActivity": "schedule",
+    "currentLevel": -31,
+    "currentTargetLevel": 10,
+    "smartTemperature": {
+      "bedLocalTime": "00:00:00",
+      "bedTimeLevel": 10,
+      "currentPhase": "bedtime",
+      "finalSleepLevel": -10,
+      "initialSleepLevel": -10,
+    },
+    "version": 2,
+  },
+  "right": {
+    "currentActivity": "off",
+    "currentLevel": -33,
+    "currentTargetLevel": 0,
+    "version": 2,
+  },
+}
+*/
+status = await appApiClient.setDeviceSideOff(deviceId, Sides.LEFT)
+/*
+{
+  "left": {
+    "currentActivity": "off",
+    "currentLevel": -33,
+    "currentTargetLevel": 0,
+    "version": 2,
+  },
+  "right": {
+    "currentActivity": "off",
+    "currentLevel": -33,
+    "currentTargetLevel": 0,
+    "version": 2,
+  },
+}
+*/
+```
+
+#### Set Device Side Level
+
+```js
+import Eightsleep, { Sides } from 'eightsleep'
+
+const eightsleep = new Eightsleep()
+const appApiClient = eightsleep.getAppApiClient()
+
+const me = await eightsleep.getMe()
+const deviceId = me.currentDevice.id
+
+let status
+await appApiClient.setDeviceSideOff(deviceId, Sides.LEFT)
+/*
+{
+  "left": {
+    "currentActivity": "off",
+    "currentLevel": -33,
+    "currentTargetLevel": 0,
+    "version": 2,
+  },
+  "right": {
+    "currentActivity": "off",
+    "currentLevel": -33,
+    "currentTargetLevel": 0,
+    "version": 2,
+  },
+}
+*/
+await appApiClient.setDeviceSideOn(deviceId, Sides.LEFT)
+const status = await appApi.setDeviceSideLevel(
+  '123456789012345678901234',
+  Sides.LEFT,
+  30,
+)
+/*
+{
+  "left": {
+    "currentActivity": "schedule",
+    "currentLevel": -31,
+    "currentTargetLevel": 30,
+    "smartTemperature": {
+      "bedLocalTime": "00:00:00",
+      "bedTimeLevel": 10,
+      "currentPhase": "bedtime",
+      "finalSleepLevel": -10,
+      "initialSleepLevel": -10,
+    },
+    "version": 2,
+  },
+  "right": {
+    "currentActivity": "off",
+    "currentLevel": -33,
+    "currentTargetLevel": 0,
+    "version": 2,
+  },
 }
 */
 ```
