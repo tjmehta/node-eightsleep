@@ -81,7 +81,7 @@ export class EightSleepAppApi extends ApiClient {
   async setDeviceSideOff(deviceId: string, side: Sides, query?: {}) {
     const path = `v2/manual_temperature/${deviceId}/sides/${side}/toggle/off`
     const init = {
-      method: 'put',
+      method: 'PUT' as 'PUT',
       query,
     }
     const status = await this.json(path, 200, init)
@@ -91,7 +91,7 @@ export class EightSleepAppApi extends ApiClient {
   async setDeviceSideOn(deviceId: string, side: Sides, query?: {}) {
     const path = `v2/manual_temperature/${deviceId}/sides/${side}/toggle/on`
     const init = {
-      method: 'put',
+      method: 'PUT' as 'PUT',
       query,
     }
     const status = await this.json(path, 200, init)
@@ -106,7 +106,7 @@ export class EightSleepAppApi extends ApiClient {
   ) {
     const path = `v2/manual_temperature/${deviceId}/sides/${side}/level/${level}`
     const init = {
-      method: 'put',
+      method: 'PUT' as 'PUT',
       query,
     }
     const status = await this.json(path, 200, init)

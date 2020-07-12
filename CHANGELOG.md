@@ -1,3 +1,7 @@
+# 1.2.2
+
+- patch - capitalize methods
+
 # 1.2.1
 
 - patch - changelog
