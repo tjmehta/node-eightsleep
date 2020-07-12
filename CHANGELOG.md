@@ -1,3 +1,7 @@
+# 1.2.1
+
+- patch - changelog
+
 # 1.2.0
 
 - minor - add support for toggling on/off sides, temperature control, updating "me"
