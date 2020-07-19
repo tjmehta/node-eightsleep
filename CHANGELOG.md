@@ -1,3 +1,7 @@
+# 1.3.1
+
+- minor - side status currentTargetLevel validate negative levels
+
 # 1.3.0
 
 - minor - add toJSON method that returns constructor options, and add additional optional constructor options
