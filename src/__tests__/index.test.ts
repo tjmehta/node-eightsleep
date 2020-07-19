@@ -27,12 +27,14 @@ function createEightSleep(customAuth?: {
     oauthClient,
   })
 
-  // hack so request hit mock api servers
-  // @ts-ignore
-  eightSleep.host = `http://localhost:${clientAPIServerPort}`
-  const appApi = eightSleep.getAppApiClient()
-  // @ts-ignore
-  appApi.host = `http://localhost:${appAPIServerPort}`
+  if (!process.env.REAL_API) {
+    // hack so request hit mock api servers
+    // @ts-ignore
+    eightSleep.host = `http://localhost:${clientAPIServerPort}`
+    const appApi = eightSleep.getAppApiClient()
+    // @ts-ignore
+    appApi.host = `http://localhost:${appAPIServerPort}`
+  }
 
   return eightSleep
 }
@@ -305,6 +307,16 @@ describe('eightsleep', () => {
         },
       }
     `)
+  })
+
+  it.only('should get a device w/ filter', async () => {
+    const e = createEightSleep()
+    await e.login()
+    const me = await e.getMe()
+    const device = await e.getDevice(me.currentDevice.id, {
+      filter: 'deviceId',
+    })
+    expect(device).toMatchInlineSnapshot(`Object {}`)
   })
 
   it('should get owner user by id', async () => {

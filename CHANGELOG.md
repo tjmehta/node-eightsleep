@@ -1,3 +1,7 @@
+# 1.3.0
+
+- minor - add toJSON method that returns constructor options, and add additional optional constructor options
+
 # 1.2.2
 
 - patch - capitalize methods

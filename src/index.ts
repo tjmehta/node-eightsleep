@@ -22,6 +22,8 @@ export type OptsType = {
   email: string
   password: string
   oauthClient?: OauthClientType
+  oauthSession?: OauthSession
+  session?: SessionType
 }
 
 export {
@@ -40,7 +42,13 @@ export default class EightSleepClientApi extends ApiClient {
   oauthClient?: OauthClientType
   oauthSession?: OauthSession
 
-  constructor({ email, password, oauthClient }: OptsType) {
+  constructor({
+    email,
+    password,
+    oauthClient,
+    oauthSession,
+    session,
+  }: OptsType) {
     super('https://client-api.8slp.net/v1', async (path, init) => {
       // @ts-ignore
       const session = init?.json?.email == null ? await this.login() : null
@@ -66,6 +74,17 @@ export default class EightSleepClientApi extends ApiClient {
     }
     this.auth = { email, password }
     this.oauthClient = oauthClient
+    this.oauthSession = oauthSession
+    this.session = session
+  }
+
+  toJSON(): OptsType {
+    return {
+      ...this.auth,
+      oauthClient: this.oauthClient,
+      oauthSession: this.oauthSession,
+      session: this.session,
+    }
   }
 
   async login() {
