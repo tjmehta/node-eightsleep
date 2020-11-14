@@ -11,7 +11,7 @@ enum Genders {
 enum Sides {
   'LEFT' = 'left',
   'RIGHT' = 'right',
-  'BOTH' = 'both',
+  'SOLO' = 'solo',
 }
 
 type UserIdType = string

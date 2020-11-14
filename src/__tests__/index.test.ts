@@ -309,14 +309,18 @@ describe('eightsleep', () => {
     `)
   })
 
-  it.only('should get a device w/ filter', async () => {
+  it('should get a device w/ filter', async () => {
     const e = createEightSleep()
     await e.login()
     const me = await e.getMe()
     const device = await e.getDevice(me.currentDevice.id, {
       filter: 'deviceId',
     })
-    expect(device).toMatchInlineSnapshot(`Object {}`)
+    expect(device).toMatchInlineSnapshot(`
+      Object {
+        "deviceId": "123456789012345678901234",
+      }
+    `)
   })
 
   it('should get owner user by id', async () => {
@@ -556,6 +560,31 @@ describe('eightsleep', () => {
           },
         }
       `)
+    })
+
+    it('test', async () => {
+      const e = createEightSleep()
+      // await e.login()
+      const me = await e.getMe()
+      const appApi = e.getAppApiClient()
+      const json = await e.getDevice(me.currentDevice.id)
+      // const json = await appApi.get(
+      //   'v1/devices/' +
+      //     me.currentDevice.id +
+      //     '/metrics/ambient?granularity=minute&from=2020-07-19T10:20:59.495Z&scope=humidity&scope=roomTemperature',
+      //   {
+      //     headers: {
+      //       'user-agent': 'Eight/786 CFNetwork/1125.2 Darwin/19.4.0',
+      //       'accept-language': 'en-us',
+      //       'accept-encoding': 'gzip, deflate, br',
+      //       accept: 'application/json',
+      //       'user-id': '1234567890abcdef123456789011111',
+      //       'session-token':
+      //         '1234567890abcdef1234567890abcdef-1234567890abcdef1234567890abcdef',
+      //     },
+      //   },
+      // )
+      console.log(JSON.stringify(json, null, 2))
     })
   })
 })
