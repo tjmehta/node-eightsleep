@@ -1,3 +1,7 @@
+# 1.3.2
+
+- patch - fix "solo" side validation
+
 # 1.3.1
 
 - minor - side status currentTargetLevel validate negative levels
