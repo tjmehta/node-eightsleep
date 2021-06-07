@@ -1,3 +1,8 @@
+# 1.4.0
+
+- minor - memoize concurrent calls to login, oauth, and queries. update simple-api-client to support backoff and throttle.
+- patch - fix oauth authentication via user/pass (when when `oauthClient` option is not provided)
+
 # 1.3.2
 
 - patch - fix "solo" side validation

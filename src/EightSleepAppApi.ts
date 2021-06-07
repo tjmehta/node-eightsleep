@@ -1,4 +1,5 @@
-import ApiClient from 'simple-api-client'
+import ApiClient, { ExtendedRequestInit } from 'simple-api-client'
+
 import EightSleepClientApi from './index'
 import { StatusCodeError } from 'simple-api-client'
 import validateDeviceStatus from './validateDeviceStatus'
@@ -34,23 +35,23 @@ export type Levels =
 
 export type OptsType = {
   clientApi: EightSleepClientApi
+  defaultInit: ExtendedRequestInit
 }
 
 export class EightSleepAppApi extends ApiClient {
   private readonly clientApi: EightSleepClientApi
 
-  constructor({ clientApi }: OptsType) {
+  constructor({ clientApi, defaultInit }: OptsType) {
     super('https://app-api.8slp.net', async (path, init) => {
       const [userId, token] = await Promise.all([
         this.userId(),
         this.oauthToken(),
       ])
       return {
+        ...defaultInit,
         ...init,
         headers: {
-          'user-agent': 'Eight/786 CFNetwork/1125.2 Darwin/19.5.0',
-          'accept-language': 'en-us',
-          'accept-encoding': 'gzip, deflate, br',
+          ...defaultInit.headers,
           'user-id': userId,
           authorization: `Bearer ${token}`,
           ...init?.headers,

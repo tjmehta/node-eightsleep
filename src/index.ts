@@ -1,10 +1,16 @@
-import ApiClient, { QueryParamsType, setFetch } from 'simple-api-client'
+import ApiClient, {
+  ExtendedRequestInit,
+  QueryParamsType,
+  setFetch,
+} from 'simple-api-client'
 import validateOauth, { OauthSession } from './validateOauth'
 import validateSession, { SessionType } from './validateSession'
 
 import BaseError from 'baseerr'
 import { EightSleepAppApi } from './EightSleepAppApi'
 import fetch from 'cross-fetch'
+import memoizeConcurrent from 'memoize-concurrent'
+import stringify from 'fast-safe-stringify'
 import validateDevice from './validateDevice'
 import validateUser from './validateUser'
 
@@ -34,10 +40,25 @@ export {
 
 setFetch(fetch)
 
+const defaultInit: ExtendedRequestInit = {
+  headers: {
+    'user-agent': 'Eight%20Sleep/1000018 CFNetwork/1237 Darwin/20.4.0',
+    'accept-language': 'en-us',
+    'accept-encoding': 'gzip, deflate, br',
+  },
+  backoff: {
+    statusCodes: /^5..$/,
+    timeouts: [100, 200],
+  },
+  throttle: {
+    statusCodes: [429],
+    timeout: 60 * 1000,
+  },
+}
+
 export default class EightSleepClientApi extends ApiClient {
   private readonly auth: LoginType
   private readonly appApiClient?: EightSleepAppApi
-  private loginPromise?: Promise<any>
   session?: SessionType
   oauthClient?: OauthClientType
   oauthSession?: OauthSession
@@ -53,25 +74,25 @@ export default class EightSleepClientApi extends ApiClient {
       // @ts-ignore
       const session = init?.json?.email == null ? await this.login() : null
       const headers = {
-        'user-agent': 'Eight/786 CFNetwork/1125.2 Darwin/19.4.0',
-        'accept-language': 'en-us',
-        'accept-encoding': 'gzip, deflate, br',
+        ...defaultInit.headers,
         ...init?.headers,
       }
       if (session) {
         Object.assign(headers, {
-          'user-id': session?.userId,
-          'session-token': session?.token,
+          'user-id': session.userId,
+          'session-token': session.token,
         })
       }
       return {
         ...init,
+        ...defaultInit,
         headers,
       }
     })
-    if (oauthClient) {
-      this.appApiClient = new EightSleepAppApi({ clientApi: this })
-    }
+    this.appApiClient = new EightSleepAppApi({
+      clientApi: this,
+      defaultInit,
+    })
     this.auth = { email, password }
     this.oauthClient = oauthClient
     this.oauthSession = oauthSession
@@ -87,23 +108,28 @@ export default class EightSleepClientApi extends ApiClient {
     }
   }
 
-  async login() {
-    if (this.loginPromise) return this.loginPromise
-    if (this.session != null) return await this.refreshSession()
+  login = memoizeConcurrent(
+    async () => {
+      if (this.session != null) return await this.refreshSession()
 
-    const { email, password } = this.auth
-    this.loginPromise = this.post('login', 200, {
-      json: {
-        email,
-        password,
-      },
-    }).finally(() => {
-      delete this.loginPromise
-    })
-    const json = await this.loginPromise
-    this.session = validateSession(json.session)
-    return this.session
-  }
+      const { email, password } = this.auth
+      const json = await this.post('login', 200, {
+        json: {
+          email,
+          password,
+        },
+      })
+      this.session = validateSession(json.session)
+      this.oauthClient = {
+        id: this.session.userId,
+        secret: this.session.token,
+      }
+      return this.session
+    },
+    {
+      cacheKey: () => 'all',
+    },
+  )
 
   async refreshSession(): Promise<SessionType> {
     if (this.auth == null || this.session == null) {
@@ -116,28 +142,31 @@ export default class EightSleepClientApi extends ApiClient {
     if (this.session.expirationDate.valueOf() < Date.now() - 100) {
       // session is expired, login again
       delete this.session
+      delete this.oauthClient
       return await this.login()
     }
 
     return this.session
   }
 
-  async oauth(): Promise<OauthSession> {
-    if (this.oauthClient == null) {
-      throw new BaseError('missing oauth client info')
-    }
-    if (this.oauthSession != null) return await this.refreshOauth()
+  oauth = memoizeConcurrent(
+    async (): Promise<OauthSession> => {
+      if (this.oauthClient == null) {
+        throw new BaseError('missing oauth client info')
+      }
+      if (this.oauthSession != null) return await this.refreshOauth()
 
-    const json = await this.post('users/oauth-token', {
-      json: {
-        client_id: this.oauthClient.id,
-        client_secret: this.oauthClient.secret,
-      },
-    })
+      const json = await this.post('users/oauth-token', {
+        json: {
+          client_id: this.oauthClient.id,
+          client_secret: this.oauthClient.secret,
+        },
+      })
 
-    this.oauthSession = validateOauth(json)
-    return this.oauthSession
-  }
+      this.oauthSession = validateOauth(json)
+      return this.oauthSession
+    },
+  )
 
   getAppApiClient(): EightSleepAppApi {
     if (!this.appApiClient) {
@@ -179,23 +208,33 @@ export default class EightSleepClientApi extends ApiClient {
     return validateUser(resJSON.user)
   }
 
-  async getUser(id: string, query?: QueryParamsType) {
-    const json = await this.get(`users/${id}`, 200, {
-      query,
-    })
-    // @ts-ignore
-    if (query?.filter) return json.result
-    return validateUser(json.user)
-  }
+  getUser = memoizeConcurrent(
+    async (id: string, query?: QueryParamsType) => {
+      const json = await this.get(`users/${id}`, 200, {
+        query,
+      })
+      // @ts-ignore
+      if (query?.filter) return json.result
+      return validateUser(json.user)
+    },
+    {
+      cacheKey: ([id, query]) => `${id}:${stringify(query ?? {})}`,
+    },
+  )
 
-  async getDevice(id: string, query?: QueryParamsType) {
-    const json = await this.get(`devices/${id}`, 200, {
-      query,
-    })
-    // @ts-ignore
-    if (query?.filter) return json.result
-    return validateDevice(json.result)
-  }
+  getDevice = memoizeConcurrent(
+    async (id: string, query?: QueryParamsType) => {
+      const json = await this.get(`devices/${id}`, 200, {
+        query,
+      })
+      // @ts-ignore
+      if (query?.filter) return json.result
+      return validateDevice(json.result)
+    },
+    {
+      cacheKey: ([id, query]) => `${id}:${stringify(query ?? {})}`,
+    },
+  )
 }
 
 export type MeUpdateType = {
