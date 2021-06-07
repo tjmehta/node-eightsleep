@@ -1,3 +1,7 @@
+# 1.4.1
+
+- patch - fix oauth authentication via user/pass does not work. reverted.
+
 # 1.4.0
 
 - minor - memoize concurrent calls to login, oauth, and queries. update simple-api-client to support backoff and throttle.

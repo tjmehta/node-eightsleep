@@ -89,12 +89,14 @@ export default class EightSleepClientApi extends ApiClient {
         headers,
       }
     })
-    this.appApiClient = new EightSleepAppApi({
-      clientApi: this,
-      defaultInit,
-    })
     this.auth = { email, password }
     this.oauthClient = oauthClient
+    if (oauthClient) {
+      this.appApiClient = new EightSleepAppApi({
+        clientApi: this,
+        defaultInit,
+      })
+    }
     this.oauthSession = oauthSession
     this.session = session
   }
@@ -120,10 +122,6 @@ export default class EightSleepClientApi extends ApiClient {
         },
       })
       this.session = validateSession(json.session)
-      this.oauthClient = {
-        id: this.session.userId,
-        secret: this.session.token,
-      }
       return this.session
     },
     {
@@ -142,7 +140,6 @@ export default class EightSleepClientApi extends ApiClient {
     if (this.session.expirationDate.valueOf() < Date.now() - 100) {
       // session is expired, login again
       delete this.session
-      delete this.oauthClient
       return await this.login()
     }
 
