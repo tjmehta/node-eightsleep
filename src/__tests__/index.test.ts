@@ -24,7 +24,7 @@ function createEightSleep(customAuth?: {
   const eightSleep = new EightSleep({
     email: customAuth?.email || email,
     password: customAuth?.password || password,
-    // oauthClient,
+    oauthClient,
   })
 
   if (!process.env.REAL_API) {
