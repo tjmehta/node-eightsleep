@@ -1,6 +1,6 @@
 {
   "name": "eightsleep",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "eightsleep api client",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.js",
