@@ -71,7 +71,7 @@ export function validateSideStatus(sideStatus: any): SideStatusType {
     throw new InvalidSideStatusError('invalid currentLevel', { sideStatus })
   if (
     typeof currentTargetLevel !== 'number' ||
-    !/^-?(0|([1-9]0)|100)$/.test(currentTargetLevel.toString())
+    !/^-?(0|([1-9][1-9])|100)$/.test(currentTargetLevel.toString())
   ) {
     throw new InvalidSideStatusError('invalid currentTargetLevel', {
       sideStatus,
